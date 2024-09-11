@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 /**
  * Sample React Native App
  * https://github.com/facebook/react-native
@@ -6,113 +7,131 @@
  */
 
 import React from 'react';
-import type {PropsWithChildren} from 'react';
+import '@/global.css';
+import {GluestackUIProvider} from '@/components/ui/gluestack-ui-provider';
 import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import {CustomColors} from './constants/Colors';
+import ChatHeader from './components/ChatHeader';
+import {Box} from './components/ui/box';
+import AudioPreviewer from './components/AudioPreviewer';
+import RecordingInterface from './components/RecordingInterface';
+import ChatTextField from './components/ChatTextField';
+import {DraggableCircle} from './components/DraggableBox';
+import AudioPlayer from './components/AudioPlayer';
+import useMediaRecorder from './hooks/useMediaRecorder';
+import {RECORDINGSTATUS} from './lib/utils';
+import {useDraggableCircle} from './hooks/useDraggableCircle';
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const {
+    recordingState,
+    recordedFile,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    recordTimeTracker,
+    allRecordedFiles,
+    audioRecorderPlayer,
+  } = useMediaRecorder();
 
+  const {
+    resetCircle,
+    isTouching,
+    isVisible,
+    // isDragging,
+    pan,
+    scale,
+    size,
+    panResponder,
+    opacity,
+  } = useDraggableCircle({stopRecording, startRecording});
+
+  // const windowDimention = useWindowDimensions();
+
+  /* const isDarkMode = useColorScheme() === 'light';
+ 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  }; */
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <GluestackUIProvider mode="light">
+      <SafeAreaView
+        className="flex-1 bg-slate-200" /* style={Colors.lighter} */
+      >
+        <StatusBar
+          barStyle={'light-content'}
+          backgroundColor={CustomColors.light.primaryDark}
+          className="text-white"
+        />
+        <ChatHeader />
+
+        <KeyboardAvoidingView
+          style={{flex: 1}}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          /* keyboardVerticalOffset={
+            Platform.OS === 'ios' ? 0 : windowDimention.height * 0.1
+          } */
+        >
+          <FlatList
+            inverted={true}
+            style={{
+              flex: 1, // Take up the rest of the space
+            }}
+            data={allRecordedFiles}
+            renderItem={({item}) => <AudioPlayer filePath={item.path} />}
+            keyExtractor={item => `${item.id}`}
+            contentContainerStyle={{
+              flexGrow: 1,
+            }}
+          />
+
+          <Box className="h-fit">
+            {recordingState === RECORDINGSTATUS.PAUSED && (
+              <AudioPreviewer
+                audioRecorderPlayer={audioRecorderPlayer}
+                filePath={recordedFile}
+              />
+            )}
+            {!isVisible && (
+              <RecordingInterface
+                isPaused={recordingState === RECORDINGSTATUS.PAUSED}
+                isRecording={recordingState === RECORDINGSTATUS.RECORDING}
+                pauseRecording={pauseRecording}
+                timeReading={recordTimeTracker?.recordTime ?? ''}
+                resumeRecording={resumeRecording}
+                stopRecording={stopRecording}
+                resetCircle={resetCircle}
+              />
+            )}
+            {isVisible && (
+              <ChatTextField
+                isRecording={recordingState === RECORDINGSTATUS.RECORDING}
+                timeReading={recordTimeTracker?.recordTime ?? ''}>
+                <DraggableCircle
+                  pan={pan}
+                  scale={scale}
+                  opacity={opacity}
+                  size={size}
+                  panResponder={panResponder}
+                  isVisible={isVisible}
+                  isTouching={isTouching}
+                />
+              </ChatTextField>
+            )}
+          </Box>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </GluestackUIProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
