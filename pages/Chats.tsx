@@ -88,7 +88,7 @@ function Chats(): React.JSX.Element {
               flex: 1, // Take up the rest of the space
             }}
             data={allRecordedFiles}
-            renderItem={({item}) => <AudioPlayer filePath={item.path} />}
+            renderItem={({item}) => <AudioPlayer filePath={item.path} time={item.time} />}
             keyExtractor={item => `${item.id}`}
             contentContainerStyle={{
               flexGrow: 1,

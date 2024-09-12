@@ -11,9 +11,8 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 // import useTimer from './useTimer';
-import {getMMSS, RECORDINGSTATUS} from '@/lib/utils';
+import {getCurrentTime, getMMSS, RECORDINGSTATUS} from '@/lib/utils';
 import useMediaPermission from './useMediaPermission';
-
 
 const useMediaRecorder = () => {
   const {isPermissionGranted} = useMediaPermission();
@@ -22,7 +21,7 @@ const useMediaRecorder = () => {
   ); // 'idle', 'recording', 'paused'
   const recordedFileRef = useRef<string | null>();
   const [allRecordedFiles, setAllRecordedFiles] = useState<
-    {id: number; path: string}[]
+    {id: number; path: string; time: string}[]
   >([]);
   const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
   const [recordTimeTracker, setTimeTracker] = useState<{
@@ -50,22 +49,21 @@ const useMediaRecorder = () => {
         console.log('PERMISSION NOT GRANTED');
         return;
       }
-       const dirs = ReactNativeBlobUtil.fs.dirs;
+      const dirs = ReactNativeBlobUtil.fs.dirs;
       const path = Platform.select({
         ios: `file://${dirs.DocumentDir}/garaazaudio${allRecordedFiles.length}.m4a`,
         android: `${dirs.CacheDir}/garaazaudio${allRecordedFiles.length}.mp3`,
       });
 
-     /*  const dirs = ReactNativeBlobUtil.fs.dirs;
+      /*  const dirs = ReactNativeBlobUtil.fs.dirs;
       const path = Platform.select({
         ios: `file://${dirs.DocumentDir}/${uuidv4()}.m4a`,
         android: `${dirs.CacheDir}/${uuidv4()}.mp3`,
       }); */
 
-
       const result = await audioRecorderPlayer.startRecorder(path, audioSet);
       setRecordingState(RECORDINGSTATUS.RECORDING);
-      recordedFileRef.current =  result;
+      recordedFileRef.current = result;
       audioRecorderPlayer.addRecordBackListener(e => {
         setTimeTracker({
           recordSecs: e.currentPosition,
@@ -106,10 +104,11 @@ const useMediaRecorder = () => {
       const result = await audioRecorderPlayer.stopRecorder();
       console.log('stopRecording', result);
       setRecordingState(RECORDINGSTATUS.IDLE);
-      recordedFileRef.current =  null;
+      recordedFileRef.current = null;
       let newMedia = {
         id: allRecordedFiles.length + 1,
         path: result,
+        time: getCurrentTime(),
       };
       setAllRecordedFiles([newMedia, ...allRecordedFiles]);
       audioRecorderPlayer.removeRecordBackListener();
