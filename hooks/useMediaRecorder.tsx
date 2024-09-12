@@ -13,14 +13,13 @@ import ReactNativeBlobUtil from 'react-native-blob-util';
 // import useTimer from './useTimer';
 import {getMMSS, RECORDINGSTATUS} from '@/lib/utils';
 import useMediaPermission from './useMediaPermission';
-import { v4 as uuidv4 } from 'uuid';
+
 
 const useMediaRecorder = () => {
   const {isPermissionGranted} = useMediaPermission();
   const [recordingState, setRecordingState] = useState<RecordingStatus>(
     RECORDINGSTATUS.IDLE,
   ); // 'idle', 'recording', 'paused'
-  const [recordedFile, setRecordedFile] = useState<string | null>(null);
   const recordedFileRef = useRef<string | null>();
   const [allRecordedFiles, setAllRecordedFiles] = useState<
     {id: number; path: string}[]
@@ -66,7 +65,6 @@ const useMediaRecorder = () => {
 
       const result = await audioRecorderPlayer.startRecorder(path, audioSet);
       setRecordingState(RECORDINGSTATUS.RECORDING);
-      setRecordedFile(result);
       recordedFileRef.current =  result;
       audioRecorderPlayer.addRecordBackListener(e => {
         setTimeTracker({
@@ -108,8 +106,7 @@ const useMediaRecorder = () => {
       const result = await audioRecorderPlayer.stopRecorder();
       console.log('stopRecording', result);
       setRecordingState(RECORDINGSTATUS.IDLE);
-      setRecordedFile(null);
-
+      recordedFileRef.current =  null;
       let newMedia = {
         id: allRecordedFiles.length + 1,
         path: result,

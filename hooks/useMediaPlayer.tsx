@@ -1,3 +1,4 @@
+import {useAudioSourceContext} from '@/components/_providers/AudioSourceContext';
 import {getMMSS, PLAYSTATUS} from '@/lib/utils';
 import {useState, useEffect, useCallback, useRef} from 'react';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
@@ -7,7 +8,7 @@ type RecordProps = {
   duration: number;
   isFinished: boolean;
 };
-const useMediaPlayer = () => {
+const useMediaPlayer = ({filePath}: {filePath: string}) => {
   const [playbackState, setPlaybackState] = useState<PlayStatus>(
     PLAYSTATUS.IDLE,
   ); // 'idle', 'playing', 'paused'
@@ -19,34 +20,47 @@ const useMediaPlayer = () => {
   const [sliderPercent, setSliderPercent] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
+  const {
+    audioRecorderPlayer: previousAudioPlayer,
+    setCurrentRecording,
+    currentRecording,
+  } = useAudioSourceContext();
   const [playTime, setPlayTime] = useState<string>('00:00');
 
-  const startPlayback = useCallback(
-    async (filePath: string | undefined) => {
-      try {
-        console.log('startPlayback', filePath);
-        if (filePath) {
-          setPlaybackState(PLAYSTATUS.PLAYING);
-          await audioRecorderPlayer.startPlayer(filePath);
-          console.log('Playback started: ', filePath);
-
-          audioRecorderPlayer.addPlayBackListener(e => {
-            if (e.isFinished) {
-              setRecordingProps({...e, currentPosition: 0});
-              setPlaybackState(PLAYSTATUS.IDLE);
-              audioRecorderPlayer.stopPlayer();
-              audioRecorderPlayer.removePlayBackListener();
-            } else {
-              setRecordingProps(e);
-            }
-          });
+  const startPlayback = useCallback(async () => {
+    try {
+      if (filePath) {
+        if (currentRecording) {
+          await previousAudioPlayer.current.stopPlayer();
+          setCurrentRecording(null);
         }
-      } catch (error) {
-        console.error('Failed to start playback: ', error);
+
+        setPlaybackState(PLAYSTATUS.PLAYING);
+        await audioRecorderPlayer.startPlayer(filePath);
+        setCurrentRecording(filePath);
+        previousAudioPlayer.current = audioRecorderPlayer;
+
+        audioRecorderPlayer.addPlayBackListener(async e => {
+          if (e.isFinished) {
+            setRecordingProps({...e, currentPosition: 0});
+            setPlaybackState(PLAYSTATUS.IDLE);
+            await audioRecorderPlayer.stopPlayer();
+            audioRecorderPlayer.removePlayBackListener();
+          } else {
+            setRecordingProps(e);
+          }
+        });
       }
-    },
-    [audioRecorderPlayer],
-  );
+    } catch (error) {
+      console.error('Failed to start playback: ', error);
+    }
+  }, [
+    audioRecorderPlayer,
+    currentRecording,
+    filePath,
+    previousAudioPlayer,
+    setCurrentRecording,
+  ]);
 
   const pausePlayback = useCallback(async () => {
     try {
@@ -70,6 +84,7 @@ const useMediaPlayer = () => {
     try {
       await audioRecorderPlayer.stopPlayer();
       setPlaybackState(PLAYSTATUS.IDLE);
+      setSliderPercent(0);
       audioRecorderPlayer.removePlayBackListener();
     } catch (error) {
       console.error('Failed to stop playback: ', error);
@@ -147,6 +162,13 @@ const useMediaPlayer = () => {
       audioRecorderPlayer.removePlayBackListener();
     };
   }, [audioRecorderPlayer]);
+
+  useEffect(() => {
+    console.log({filePath, currentRecording, playbackState})
+    if (currentRecording && filePath !== currentRecording && playbackState !== PLAYSTATUS.IDLE) {
+      stopPlayback();
+    }
+  }, [filePath, currentRecording, stopPlayback, playbackState]);
 
   return {
     playbackState,

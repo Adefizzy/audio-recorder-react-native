@@ -26,7 +26,8 @@ export default function AudioPlayer({filePath}: {filePath: string}) {
     recordingProps,
     adjustPlaybackRate,
     playbackRate,
-  } = useMediaPlayer();
+  } = useMediaPlayer({filePath});
+
 
   return (
     <VStack className="relative bg-secondary-0/25 w-[85%] ml-auto my-2 rounded-md  mr-4 h-20 px-4">
@@ -47,6 +48,7 @@ export default function AudioPlayer({filePath}: {filePath: string}) {
           <Pressable
             onPress={() => {
               pausePlayback();
+              console.log('PAUSE')
             }}
             className="mx-5">
             <Box>
@@ -61,12 +63,14 @@ export default function AudioPlayer({filePath}: {filePath: string}) {
             onPress={() => {
               if (playbackState === PLAYSTATUS.PAUSED) {
                 resumePlayback();
+                console.log('RESUME')
               } else if (
                 playbackState === PLAYSTATUS.IDLE ||
                 recordingProps.isFinished
               ) {
                 if (filePath) {
-                  startPlayback(filePath);
+                  startPlayback();
+                  console.log('PLAYING')
                 }
               }
             }}
