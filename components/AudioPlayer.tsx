@@ -11,7 +11,7 @@ import useMediaPlayer from '@/hooks/useMediaPlayer';
 import {PLAYSTATUS} from '@/lib/utils';
 import {VStack} from './ui/vstack';
 
-export default function AudioPlayer({filePath}: {filePath: string}) {
+export default function AudioPlayer({filePath, time}: {filePath: string, time: string}) {
   const {
     playbackState,
     // currentPosition,
@@ -98,8 +98,9 @@ export default function AudioPlayer({filePath}: {filePath: string}) {
           <SliderThumb size="lg" className="visible bg-secondary-0" />
         </Slider>
       </HStack>
-      <HStack className="justify-center absolute w-full bottom-1">
+      <HStack className="justify-between w-3/4 absolute right-0 bottom-1">
         <Text>{playTime}{' '}</Text>
+        <Text>{time}{' '}</Text>
       </HStack>
     </VStack>
   );
